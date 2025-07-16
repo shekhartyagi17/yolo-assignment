@@ -1,0 +1,35 @@
+services:
+  yolo-detection:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount media directory for persistent uploads and results
+      - ./media:/app/media
+      # Mount the YOLO model file
+      - ./yolo11n.pt:/app/yolo11n.pt
+      # Mount static files for development
+      - ./static:/app/static
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=yolo_detection.settings
+    command: >
+      sh -c "python manage.py makemigrations &&
+              python manage.py migrate &&
+              python manage.py runserver 0.0.0.0:8000"
+    restart: unless-stopped
+
+  # Optional: Add a database service if you want to use PostgreSQL
+  # db:
+  #   image: postgres:13
+  #   environment:
+  #     - POSTGRES_DB=yolo_detection
+  #     - POSTGRES_USER=yolo_user
+  #     - POSTGRES_PASSWORD=yolo_password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+volumes:
+  postgres_data: 
