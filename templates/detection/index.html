@@ -14,14 +14,37 @@
 
         <div class="card shadow">
             <div class="card-body">
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Form Errors:</strong>
+                        <ul class="mb-0">
+                            {% for field, errors in form.errors.items %}
+                                <li><strong>{{ field }}:</strong> 
+                                    {% for error in errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
                 <form method="post" enctype="multipart/form-data" id="upload-form" action="{% url 'detection:index' %}">
                     {% csrf_token %}
                     
+                    <!-- Hidden file input -->
+                    {% for field in form %}
+                        {% if field.name == 'image' %}
+                            <input type="file" name="{{ field.name }}" id="image-upload" class="form-control" accept="image/*" style="display: none;">
+                        {% endif %}
+                    {% endfor %}
+                    
                     <div class="upload-area" id="upload-area">
-                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                        <h5>Drag and drop your image here</h5>
-                        <p class="text-muted">or click to browse</p>
-                        {{ form.image }}
+                        <div id="upload-content">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                            <h5>Drag and drop your image here</h5>
+                            <p class="text-muted">or click to browse</p>
+                        </div>
                     </div>
 
                     <div class="text-center mt-3">
@@ -31,7 +54,7 @@
                     </div>
                 </form>
 
-                <div class="loading text-center mt-3" id="loading">
+                <div class="loading text-center mt-3" id="loading" style="display: none;">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
@@ -74,6 +97,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const loading = document.getElementById('loading');
     const submitBtn = document.getElementById('submit-btn');
 
+    console.log('Upload area:', uploadArea);
+    console.log('File input:', fileInput);
+    console.log('Form:', form);
+
     // Drag and drop functionality
     uploadArea.addEventListener('dragover', function(e) {
         e.preventDefault();
@@ -90,6 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadArea.classList.remove('dragover');
         
         const files = e.dataTransfer.files;
+        console.log('Files dropped:', files);
         if (files.length > 0) {
             fileInput.files = files;
             updateUploadArea();
@@ -98,21 +126,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Click to upload
     uploadArea.addEventListener('click', function() {
+        console.log('Upload area clicked');
         fileInput.click();
     });
 
-    fileInput.addEventListener('change', updateUploadArea);
+    fileInput.addEventListener('change', function() {
+        console.log('File input changed, files:', fileInput.files);
+        updateUploadArea();
+    });
 
     function updateUploadArea() {
+        const uploadContent = document.getElementById('upload-content');
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
-            uploadArea.innerHTML = `
+            uploadContent.innerHTML = `
                 <i class="fas fa-image fa-3x text-success mb-3"></i>
                 <h5>${file.name}</h5>
                 <p class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
             `;
         } else {
-            uploadArea.innerHTML = `
+            uploadContent.innerHTML = `
                 <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
                 <h5>Drag and drop your image here</h5>
                 <p class="text-muted">or click to browse</p>
@@ -122,12 +155,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Form submission
     form.addEventListener('submit', function(e) {
+        console.log('Form submitted');
+        console.log('File input files:', fileInput.files);
+        console.log('File input files length:', fileInput.files.length);
+        
         if (fileInput.files.length === 0) {
             e.preventDefault();
             alert('Please select an image to upload.');
             return;
         }
 
+        console.log('File selected:', fileInput.files[0]);
         loading.style.display = 'block';
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
